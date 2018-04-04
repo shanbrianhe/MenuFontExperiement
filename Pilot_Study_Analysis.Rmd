@@ -1,0 +1,32 @@
+---
+title: "Pilot_Study_Analysis"
+author: "Shan He"
+date: "4/4/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(lmtest)
+library(sandwich)
+library(multiwayvcov)
+library(data.table)
+library(stargazer)
+```
+
+```{r}
+d <- read.csv('Pricing Research Pilot Data (cleaned).csv')
+d <- data.table(d)
+
+#delete useless columns
+d[, c("Start.Date", "End.Date", "IP.Address", "Email.Address", "First.Name", "Last.Name", "Custom.Data.1") := NULL]
+
+head(d, 20)
+```
+
+```{r}
+summary(d)
+```
