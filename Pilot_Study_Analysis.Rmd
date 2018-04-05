@@ -30,3 +30,34 @@ head(d, 20)
 ```{r}
 summary(d)
 ```
+
+#check for demand effect
+```{r}
+d[, Survey_Purpose]
+```
+
+No respondents realized that we were understanding the difference between font and price perception. GOOD
+
+#Age Group
+```{r}
+hist(d[, Age], breaks = 20, main = 'Histogram of Age', xlab = 'Age', xlim = range(0, 100))
+```
+
+#Income Level
+```{r}
+hist(d[, Income], breaks = 30, main = 'Histogram of Income', xlab = 'Income')
+```
+
+#Item Price Filtering
+```{r}
+d[, avg_price := (Price1 + Price2 + Price3 + Price4 + Price5 + Price6)/6]
+d_2 <- d[avg_price < 50,]
+hist(d_2$Price1, breaks = 100, xlim = c(0,100))
+d_2[,c('Price1','Price2','Price3','Price4','Price5','Price6')]
+```
+
+#Look at price average and standard deviation
+```{r}
+d_2[, table(Item1)]
+d_2[, .(mean_price = mean(Price1), stdev = sd(Price1)), keyby = .(Item1)]
+```
