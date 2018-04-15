@@ -1,0 +1,84 @@
+---
+title: "Pilot_Study_Analysis"
+author: "Shan He"
+date: "4/4/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(lmtest)
+library(sandwich)
+library(multiwayvcov)
+library(data.table)
+library(stargazer)
+library(dplyr)
+```
+
+```{r}
+d <- read.csv('Pricing Research Final Collection(normalized).csv')
+d <- data.table(d)
+
+#delete useless columns
+
+head(d, 20)
+```
+
+```{r}
+summary(d)
+```
+
+#exlude unqualified answers
+```{r}
+#1. exclude people who googled
+d <- d[substr(Google, 1, 2) == 'No',]
+
+#2. exclude people who used phone or tablet
+d <- d[Device.Type != 'iOS Phone / Tablet',]
+
+#3. exclude people $0 answers
+d <- d[Item_Price != 0,]
+
+summary(d)
+```
+
+#Age Group
+```{r}
+hist(d[, Age_Question], breaks = 20, main = 'Histogram of Age', xlab = 'Age', xlim = range(0, 100))
+```
+
+#Income Level
+```{r}
+hist(d[, Income_Question], breaks = 30, main = 'Histogram of Income', xlab = 'Income')
+```
+
+```{r}
+d[font_family == 'PT', substr(Item, 9, 13)]
+```
+
+#create variables for blocks (food item), and factors (font family, typography) 
+```{r}
+#item number (block)
+d[, item_number := substr(Item, 5, 5)]
+
+#font family (factor)
+d[, font_family := case_when(
+                      substr(Item, 7, 8) == 'Ro' ~ "Roboto",
+                      substr(Item, 7, 8) == 'Jo' ~ "Josefin",
+                      substr(Item, 7, 8) == 'PT' ~ "PT")]
+d[, typography := case_when(
+                      (font_family == 'Roboto' & substr(Item, 13, 13) == 'S') ~ 'Serif',
+                      (font_family == 'Roboto' & substr(Item, 13, 13) != 'S') ~ 'Sans',
+                      (font_family == 'Josefin' & substr(Item, 14, 18) != 'Slab') ~ 'Serif',
+                      (font_family == 'Josefin' & substr(Item, 14, 18) != 'Sans') ~ 'Sans',
+                      (font_family == 'PT' & substr(Item, 9, 13) != 'Serif') ~ 'Serif',
+                      (font_family == 'PT' & substr(Item, 9, 13) != 'Sans') ~ 'Sans')]
+
+#treatment variable Serif
+d[, serif := case_when( typography == 'Serif' ~ 1,
+                        typography == 'Serif' ~ 0)]
+```
+
