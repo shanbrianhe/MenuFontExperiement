@@ -79,6 +79,6 @@ d[, typography := case_when(
 
 #treatment variable Serif
 d[, serif := case_when( typography == 'Serif' ~ 1,
-                        typography == 'Serif' ~ 0)]
+                        typography == 'Sans' ~ 0)]
 ```
 
