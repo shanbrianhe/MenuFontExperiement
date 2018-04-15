@@ -23,6 +23,7 @@ d <- read.csv('Pricing Research Final Collection(normalized).csv')
 d <- data.table(d)
 
 #delete useless columns
+d[, c("Collector.ID", "Start.Date", "End.Date" ) := NULL]
 
 head(d, 20)
 ```
@@ -80,5 +81,12 @@ d[, typography := case_when(
 #treatment variable Serif
 d[, serif := case_when( typography == 'Serif' ~ 1,
                         typography == 'Sans' ~ 0)]
+```
+
+#covariate balance check
+
+
+```{r}
+
 ```
 
