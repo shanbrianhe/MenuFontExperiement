@@ -83,6 +83,10 @@ d[, serif := case_when( typography == 'Serif' ~ 1,
                         typography == 'Sans' ~ 0)]
 ```
 
+#Price
+```{r}
+hist(d[, Item_Price], breaks = 30, main = 'Histogram of Price', xlab = 'Price')
+```
 
 
 #covariate balance check
@@ -120,3 +124,10 @@ stargazer(
           )
 ```
 
+#check to see within-block treatment effect
+```{r}
+ATE_model_short_2 <- lm(Item_Price ~ serif + factor(item_number) + Income_Question + Age_Question + male, data = d[font_family == 'PT'])
+
+stargazer(ATE_model_short_2, type = "text", se=list(sqrt(diag(vcovHC(ATE_model_short_2)))))
+
+```
