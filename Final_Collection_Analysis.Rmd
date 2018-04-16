@@ -83,10 +83,27 @@ d[, serif := case_when( typography == 'Serif' ~ 1,
                         typography == 'Sans' ~ 0)]
 ```
 
+
+
 #covariate balance check
 
-
 ```{r}
+summary(d$Age_Question)
 
+age_check <- lm(Age_Question ~ serif + factor(font_family) + factor(item_number), data = d)
+income_check <- lm(Income_Question ~ serif + factor(font_family) + factor(item_number), data = d)
+
+#create dummy variable for gender
+unique(d$Gender.1)
+d[, male := case_when( Gender.1 == 'Male' ~ 1,
+                        Gender.1 == 'Female' ~ 0)]
+
+gender_check <- lm(male ~ serif + factor(font_family) + factor(item_number), data = d)
+#region_check <- lm(Region ~ serif + factor(font_family) + factor(item_number), data = d)
+
+stargazer(age_check, 
+          income_check, 
+          gender_check, 
+          type = "text")
 ```
 
