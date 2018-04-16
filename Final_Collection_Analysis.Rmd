@@ -126,8 +126,14 @@ stargazer(
 
 #check to see within-block treatment effect
 ```{r}
-ATE_model_short_2 <- lm(Item_Price ~ serif + factor(item_number) + Income_Question + Age_Question + male, data = d[font_family == 'PT'])
+ATE_model_short_PT <- lm(Item_Price ~ serif + factor(item_number) + Income_Question + Age_Question + male, data = d[font_family == 'PT'])
 
-stargazer(ATE_model_short_2, type = "text", se=list(sqrt(diag(vcovHC(ATE_model_short_2)))))
+stargazer(ATE_model_short_PT, type = "text", se=list(sqrt(diag(vcovHC(ATE_model_short_PT)))))
+```
 
+
+```{r}
+ATE_model_short_Item1 <- lm(Item_Price ~ serif + factor(font_family) + Income_Question + Age_Question + male, data = d[item_number == '1'])
+
+stargazer(ATE_model_short_Item1, type = "text", se=list(sqrt(diag(vcovHC(ATE_model_short_Item1)))))
 ```
