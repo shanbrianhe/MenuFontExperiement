@@ -107,3 +107,16 @@ stargazer(age_check,
           type = "text")
 ```
 
+#treatment effect
+```{r}
+ATE_model_short <- lm(Item_Price ~ serif + factor(font_family) + factor(item_number) + Income_Question + Age_Question + male, data = d)
+
+ATE_model_long <- lm(Item_Price ~ serif * factor(font_family) * factor(item_number) + Income_Question + Age_Question + male + factor(Region), data = d)
+
+stargazer(
+          ATE_model_short,
+          ATE_model_long,
+          type = "text"
+          )
+```
+
