@@ -56,10 +56,6 @@ hist(d[, Age_Question], breaks = 20, main = 'Histogram of Age', xlab = 'Age', xl
 hist(d[, Income_Question], breaks = 30, main = 'Histogram of Income', xlab = 'Income')
 ```
 
-```{r}
-d[font_family == 'PT', substr(Item, 9, 13)]
-```
-
 #create variables for blocks (food item), and factors (font family, typography) 
 ```{r}
 #item number (block)
@@ -94,35 +90,60 @@ hist(d[, Item_Price], breaks = 30, main = 'Histogram of Price', xlab = 'Price')
 ```{r}
 summary(d$Age_Question)
 
-age_check <- lm(Age_Question ~ serif + factor(font_family) + factor(item_number), data = d)
-income_check <- lm(Income_Question ~ serif + factor(font_family) + factor(item_number), data = d)
+# age_check <- lm(Age_Question ~ serif + factor(font_family) + factor(item_number), data = d)
+# income_check <- lm(Income_Question ~ serif + factor(font_family) + factor(item_number), data = d)
 
 #create dummy variable for gender
 unique(d$Gender.1)
 d[, male := case_when( Gender.1 == 'Male' ~ 1,
                         Gender.1 == 'Female' ~ 0)]
 
-gender_check <- lm(male ~ serif + factor(font_family) + factor(item_number), data = d)
+#gender_check <- lm(male ~ serif + factor(font_family) + factor(item_number), data = d)
 #region_check <- lm(Region ~ serif + factor(font_family) + factor(item_number), data = d)
 
-stargazer(age_check, 
-          income_check, 
-          gender_check, 
-          type = "text")
+#stargazer(age_check, 
+#          income_check, 
+#          gender_check, 
+#          type = "text")
+
+model_simple <- lm(serif ~ 1, data = d)
+model_covariates <- lm(serif ~ 1 + Age_Question + Income_Question + male + factor(Region) + factor(Food_Preference), data = d)
+
+anova(model_simple, model_covariates)
 ```
 
 #treatment effect
 ```{r}
-ATE_model_short <- lm(Item_Price ~ serif + factor(font_family) + factor(item_number) + Income_Question + Age_Question + male, data = d)
+# ATE_model_short <- lm(Item_Price ~ serif + factor(font_family) + factor(item_number) + factor(Food_Preference)+ Income_Question + Age_Question + male, data = d)
 
-ATE_model_long <- lm(Item_Price ~ serif * factor(font_family) * factor(item_number) + Income_Question + Age_Question + male + factor(Region), data = d)
 
-stargazer(
-          ATE_model_short,
-          ATE_model_long,
-          type = "text"
+#short model
+ATE_model_short <- lm(Item_Price ~ serif * factor(font_family) + factor(item_number) + factor(Food_Preference) + Income_Question + Age_Question + male, data = d)
+
+ATE_model_short$cluster1.vcov <- cluster.vcov(ATE_model_short, ~ Respondent.ID)
+
+#long model, ignoring people with empty region
+ATE_model_long <- lm(Item_Price ~ serif * factor(font_family) + factor(item_number) + factor(Food_Preference) + Income_Question + Age_Question + male + factor(Region), data = d[Region != ''])
+
+ATE_model_long$cluster1.vcov <- cluster.vcov(ATE_model_long, ~ Respondent.ID)
+
+# 
+# stargazer(
+#           ATE_model_short,
+#           ATE_model_long,
+#           type = "text"
+#           )
+
+stargazer(ATE_model_short,
+          ATE_model_long, 
+          type = "text", 
+          se=c(list(sqrt(diag(ATE_model_short$cluster1.vcov))), list(sqrt(diag(ATE_model_long$cluster1.vcov)))), 
+          add.lines = list(c("Fixed effects?", "No", "Yes"))
           )
+
+d[Region != '', .N, keyby = Region]
 ```
+
 
 #check to see within-block treatment effect
 ```{r}
@@ -136,4 +157,11 @@ stargazer(ATE_model_short_PT, type = "text", se=list(sqrt(diag(vcovHC(ATE_model_
 ATE_model_short_Item1 <- lm(Item_Price ~ serif + factor(font_family) + Income_Question + Age_Question + male, data = d[item_number == '1'])
 
 stargazer(ATE_model_short_Item1, type = "text", se=list(sqrt(diag(vcovHC(ATE_model_short_Item1)))))
+```
+
+#power analysis
+
+```{r}
+library(pwr)
+pwr.t.test(d = )
 ```
