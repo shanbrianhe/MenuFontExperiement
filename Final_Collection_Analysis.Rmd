@@ -50,6 +50,14 @@ d[, typography := case_when(
 d[, serif := case_when( typography == 'Serif' ~ 1,
                         typography == 'Sans' ~ 0)]
 
+#exclude unqualified answers
+#1. exclude people who googled
+d <- d[substr(Google, 1, 2) == 'No',]
+
+#2. exclude people who used phone or tablet
+d <- d[Device.Type != 'iOS Phone / Tablet',]
+
+
 #create dummy variable for gender
 unique(d$Gender.1)
 d[, male := case_when( Gender.1 == 'Male' ~ 1,
@@ -77,7 +85,7 @@ head(df)
 
 ATE_model_Price_Index <- lm(price_index ~ serif * factor(font_family) + factor(item_number) + factor(Food_Preference) + Income_Question + Age_Question + male + factor(Region) + factor(item1_font), data = df)
 
-ATE_model_Price_Index$cluster1.vcov <- cluster.vcov(ATE_model_long, ~ Respondent.ID)
+ATE_model_Price_Index$cluster1.vcov <- cluster.vcov(ATE_model_Price_Index, ~ Respondent.ID)
 
 stargazer(
           ATE_model_Price_Index, 
@@ -92,11 +100,6 @@ stargazer(
 hist(d[, Item_Price], breaks = 30, main = 'Histogram of Price', xlab = 'Price')
 
 hist(df[, price_index], breaks = 10, main = 'Histogram of Price Index', xlab = 'Price Index')
-```
-
-
-```{r}
-summary(d)
 ```
 
 #exlude unqualified answers
