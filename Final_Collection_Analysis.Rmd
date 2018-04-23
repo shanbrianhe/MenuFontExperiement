@@ -28,6 +28,73 @@ d[, c("Collector.ID", "Start.Date", "End.Date" ) := NULL]
 head(d, 20)
 ```
 
+#create variables for blocks (food item), and factors (font family, typography) 
+```{r}
+#item number (block)
+d[, item_number := substr(Item, 5, 5)]
+
+#font family (factor)
+d[, font_family := case_when(
+                      substr(Item, 7, 8) == 'Ro' ~ "Roboto",
+                      substr(Item, 7, 8) == 'Jo' ~ "Josefin",
+                      substr(Item, 7, 8) == 'PT' ~ "PT")]
+d[, typography := case_when(
+                      (font_family == 'Roboto' & substr(Item, 13, 13) == 'S') ~ 'Serif',
+                      (font_family == 'Roboto' & substr(Item, 13, 13) != 'S') ~ 'Sans',
+                      (font_family == 'Josefin' & substr(Item, 14, 18) != 'Slab') ~ 'Serif',
+                      (font_family == 'Josefin' & substr(Item, 14, 18) != 'Sans') ~ 'Sans',
+                      (font_family == 'PT' & substr(Item, 9, 13) != 'Serif') ~ 'Serif',
+                      (font_family == 'PT' & substr(Item, 9, 13) != 'Sans') ~ 'Sans')]
+
+#treatment variable Serif
+d[, serif := case_when( typography == 'Serif' ~ 1,
+                        typography == 'Sans' ~ 0)]
+
+#create dummy variable for gender
+unique(d$Gender.1)
+d[, male := case_when( Gender.1 == 'Male' ~ 1,
+                        Gender.1 == 'Female' ~ 0)]
+
+#list item 1 price for standardization
+item1 <- d[item_number == "1", .(Respondent.ID, item1_price = Item_Price, item1_font = paste(font_family, typography, sep = "_"))]
+head(item1)
+
+#check for any zero item1
+item1[item1_price == 0]
+
+#exclude these two people
+item1 <- item1[item1_price != 0]
+
+#join item 1 price for standardization
+setkey(d, Respondent.ID)
+setkey(item1, Respondent.ID)
+df <- d[item1, nomatch = 0]
+
+#create standardized price
+df[, price_index := Item_Price / item1_price]
+
+head(df)
+
+ATE_model_Price_Index <- lm(price_index ~ serif * factor(font_family) + factor(item_number) + factor(Food_Preference) + Income_Question + Age_Question + male + factor(Region) + factor(item1_font), data = df)
+
+ATE_model_Price_Index$cluster1.vcov <- cluster.vcov(ATE_model_long, ~ Respondent.ID)
+
+stargazer(
+          ATE_model_Price_Index, 
+          type = "text", 
+          se=list(sqrt(diag(ATE_model_Price_Index$cluster1.vcov)))
+          )
+
+```
+
+#Price
+```{r}
+hist(d[, Item_Price], breaks = 30, main = 'Histogram of Price', xlab = 'Price')
+
+hist(df[, price_index], breaks = 10, main = 'Histogram of Price Index', xlab = 'Price Index')
+```
+
+
 ```{r}
 summary(d)
 ```
@@ -56,35 +123,6 @@ hist(d[, Age_Question], breaks = 20, main = 'Histogram of Age', xlab = 'Age', xl
 hist(d[, Income_Question], breaks = 30, main = 'Histogram of Income', xlab = 'Income')
 ```
 
-#create variables for blocks (food item), and factors (font family, typography) 
-```{r}
-#item number (block)
-d[, item_number := substr(Item, 5, 5)]
-
-#font family (factor)
-d[, font_family := case_when(
-                      substr(Item, 7, 8) == 'Ro' ~ "Roboto",
-                      substr(Item, 7, 8) == 'Jo' ~ "Josefin",
-                      substr(Item, 7, 8) == 'PT' ~ "PT")]
-d[, typography := case_when(
-                      (font_family == 'Roboto' & substr(Item, 13, 13) == 'S') ~ 'Serif',
-                      (font_family == 'Roboto' & substr(Item, 13, 13) != 'S') ~ 'Sans',
-                      (font_family == 'Josefin' & substr(Item, 14, 18) != 'Slab') ~ 'Serif',
-                      (font_family == 'Josefin' & substr(Item, 14, 18) != 'Sans') ~ 'Sans',
-                      (font_family == 'PT' & substr(Item, 9, 13) != 'Serif') ~ 'Serif',
-                      (font_family == 'PT' & substr(Item, 9, 13) != 'Sans') ~ 'Sans')]
-
-#treatment variable Serif
-d[, serif := case_when( typography == 'Serif' ~ 1,
-                        typography == 'Sans' ~ 0)]
-```
-
-#Price
-```{r}
-hist(d[, Item_Price], breaks = 30, main = 'Histogram of Price', xlab = 'Price')
-```
-
-
 #covariate balance check
 
 ```{r}
@@ -92,11 +130,6 @@ summary(d$Age_Question)
 
 # age_check <- lm(Age_Question ~ serif + factor(font_family) + factor(item_number), data = d)
 # income_check <- lm(Income_Question ~ serif + factor(font_family) + factor(item_number), data = d)
-
-#create dummy variable for gender
-unique(d$Gender.1)
-d[, male := case_when( Gender.1 == 'Male' ~ 1,
-                        Gender.1 == 'Female' ~ 0)]
 
 #gender_check <- lm(male ~ serif + factor(font_family) + factor(item_number), data = d)
 #region_check <- lm(Region ~ serif + factor(font_family) + factor(item_number), data = d)
@@ -115,16 +148,17 @@ anova(model_simple, model_covariates)
 #treatment effect
 ```{r}
 # ATE_model_short <- lm(Item_Price ~ serif + factor(font_family) + factor(item_number) + factor(Food_Preference)+ Income_Question + Age_Question + male, data = d)
-
+# ATE_model_short$cluster1.vcov <- cluster.vcov(ATE_model_short, ~ Respondent.ID)
 
 #short model
-ATE_model_short <- lm(Item_Price ~ serif * factor(font_family) + factor(item_number) + factor(Food_Preference) + Income_Question + Age_Question + male, data = d)
+ATE_model_0 <- lm(Item_Price ~ serif * factor(font_family), data = d)
 
+
+ATE_model_short <- lm(Item_Price ~ serif * factor(font_family) + factor(Respondent.ID), data = d)
 ATE_model_short$cluster1.vcov <- cluster.vcov(ATE_model_short, ~ Respondent.ID)
 
 #long model, ignoring people with empty region
 ATE_model_long <- lm(Item_Price ~ serif * factor(font_family) + factor(item_number) + factor(Food_Preference) + Income_Question + Age_Question + male + factor(Region), data = d[Region != ''])
-
 ATE_model_long$cluster1.vcov <- cluster.vcov(ATE_model_long, ~ Respondent.ID)
 
 # 
@@ -134,14 +168,18 @@ ATE_model_long$cluster1.vcov <- cluster.vcov(ATE_model_long, ~ Respondent.ID)
 #           type = "text"
 #           )
 
+stargazer(ATE_model_0, ATE_model_short, type = "text", omit = "Respondent.ID")
+
+
+stargazer(ATE_model_short, type = "text", se=list(sqrt(diag(ATE_model_short$cluster1.vcov))))
+
 stargazer(ATE_model_short,
           ATE_model_long, 
           type = "text", 
+          omit = "Respondent.ID",
           se=c(list(sqrt(diag(ATE_model_short$cluster1.vcov))), list(sqrt(diag(ATE_model_long$cluster1.vcov)))), 
           add.lines = list(c("Fixed effects?", "No", "Yes"))
           )
-
-d[Region != '', .N, keyby = Region]
 ```
 
 
