@@ -191,11 +191,11 @@ est.cace <- function(d) coef(lm(Item_Price ~ Serif_Assign * factor(Font_Family_A
 
 #simulation
 simulation.sharp.null <- replicate(10000, est.cace(d_base))
-obs.cace <- coef(ATE_model_long)[2]
+obs.cace <- coef(ATE_model_full)[2]
 
-plot(density(simulation.sharp.null))
+plot(density(simulation.sharp.null), main = "")
 abline(v=obs.cace)
-mean(obs.cace >= simulation.sharp.null)
+mean(abs(obs.cace) <= abs(simulation.sharp.null))
 ```
 
 
