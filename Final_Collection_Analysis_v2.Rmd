@@ -137,8 +137,8 @@ summary(d$Age_Question)
 #          gender_check, 
 #          type = "text")
 
-model_simple <- lm(serif ~ 1, data = d)
-model_covariates <- lm(serif ~ 1 + Age_Question + Income_Question + male + factor(Region) + factor(Food_Preference), data = d)
+model_simple <- lm(Serif ~ 1, data = d)
+model_covariates <- lm(Serif ~ 1 + Age + Income + Male + factor(Region) + factor(Food_Preference), data = d)
 
 anova(model_simple, model_covariates)
 ```
@@ -158,19 +158,7 @@ ATE_model_short <- lm(Item_Price ~ Serif * factor(Font_family) + factor(item_num
 ATE_model_long <- lm(Item_Price ~ Serif * factor(Font_family) + factor(item_number) + Income + Age + Male + factor(Food_Preference) + factor(Region), data = d)
 
 #full model
-ATE_model_full <- lm(Item_Price ~ Serif * factor(Font_family) * factor(item_number) + Income + Age + Male, data = d)
-
-# 
-# stargazer(
-#           ATE_model_short,
-#           ATE_model_long,
-#           type = "text"
-#           )
-# 
-# stargazer(ATE_model_0, ATE_model_short, type = "text", omit = "Respondent.ID")
-# 
-# 
-# stargazer(ATE_model_short, type = "text", se=list(sqrt(diag(ATE_model_short$cluster1.vcov))))
+ATE_model_full <- lm(Item_Price ~ Serif * factor(Font_family) * factor(item_number) + Income + Age + Male + factor(Food_Preference) + factor(Region), data = d)
 
 stargazer(ATE_model_short,
           ATE_model_long,
@@ -178,8 +166,14 @@ stargazer(ATE_model_short,
           type = "text", 
           intercept.bottom = FALSE,
           se=c(list(sqrt(diag(vcovHC(ATE_model_short)))), list(sqrt(diag(vcovHC(ATE_model_long)))), list(sqrt(diag(vcovHC(ATE_model_full))))),
-          add.lines = list(c("Fixed effects?", "No", "Yes", "Yes"))
+          omit = c(":"
+                   , "Region)M", "Region)E", "Region)N", "Region)P", "Region)S", "Region)West North" #ignore insignificant region
+                    , "Food_Preference)O", "Food_Preference)P", "Food_Preference)Vege"), #ignore insignificant food preference
+          add.lines = c(list(c("Covariates?", "No", "Yes", "Yes")), list(c("Interaction between Serif and Font?", "No", "Yes", "Yes")) 
+                        , list(c("Interaction between Serif, Font, and Item?", "No", "No", "Yes")))
           )
+
+coef(ATE_model_full)
 
 ```
 
