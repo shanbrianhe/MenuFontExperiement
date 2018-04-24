@@ -206,16 +206,6 @@ mean(obs.cace >= simulation.sharp.null)
 
 
 
-
-
-
-
-
-
-
-
-
-
 <!-- #check to see within-block treatment effect -->
 <!-- ```{r} -->
 <!-- ATE_model_short_PT <- lm(Item_Price ~ serif + factor(item_number) + Income_Question + Age_Question + male, data = d[font_family == 'PT']) -->
