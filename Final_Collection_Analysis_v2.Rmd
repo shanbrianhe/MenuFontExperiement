@@ -72,36 +72,45 @@ d[, Male := case_when( Gender == 'Male' ~ 1,
 
 ##Model Exploration: Price Index Standardization
 ```{r}
-#list item 1 price for standardization
-item1 <- d[item_number == "1", .(Respondent.ID, item1_price = Item_Price, item1_font = paste(Font_family, Typography, sep = "_"))]
-head(item1)
+# #list item 1 price for standardization
+# item1 <- d[item_number == "1", .(Respondent.ID, item1_price = Item_Price, item1_font = paste(Font_family, Typography, sep = "_"))]
+# head(item1)
+# 
+# #check for any zero item1
+# item1[item1_price == 0]
+# 
+# #exclude these two people
+# item1 <- item1[item1_price != 0]
+# 
+# #join item 1 price for standardization
+# setkey(d, Respondent.ID)
+# setkey(item1, Respondent.ID)
+# df <- d[item1, nomatch = 0]
+# 
+# #create standardized price
+# df[, price_index := Item_Price / item1_price]
+# 
+# head(df)
+# 
+# ATE_model_Price_Index <- lm(price_index ~ Serif * factor(Font_family) + factor(item_number) + factor(Food_Preference) + Income + Age + Male + factor(Region) + factor(item1_font), data = df)
+# 
+# ATE_model_Price_Index$cluster1.vcov <- cluster.vcov(ATE_model_Price_Index, ~ Respondent.ID)
+# 
+# stargazer(
+#           ATE_model_Price_Index, 
+#           type = "text", 
+#           se=list(sqrt(diag(vcovHC(ATE_model_Price_Index))))
+#           )
 
-#check for any zero item1
-item1[item1_price == 0]
+```
+#Treatment Distribution
+```{r}
+d[, table(Serif, Font_family)]
 
-#exclude these two people
-item1 <- item1[item1_price != 0]
+hist(d$Age, breaks = 30, main = "", xlab = "Age")
+hist(d$Male, breaks = 2, main = "", xlab = "Gender")
 
-#join item 1 price for standardization
-setkey(d, Respondent.ID)
-setkey(item1, Respondent.ID)
-df <- d[item1, nomatch = 0]
-
-#create standardized price
-df[, price_index := Item_Price / item1_price]
-
-head(df)
-
-ATE_model_Price_Index <- lm(price_index ~ Serif * factor(Font_family) + factor(item_number) + factor(Food_Preference) + Income + Age + Male + factor(Region) + factor(item1_font), data = df)
-
-ATE_model_Price_Index$cluster1.vcov <- cluster.vcov(ATE_model_Price_Index, ~ Respondent.ID)
-
-stargazer(
-          ATE_model_Price_Index, 
-          type = "text", 
-          se=list(sqrt(diag(vcovHC(ATE_model_Price_Index))))
-          )
-
+summary(d)
 ```
 
 #Price
@@ -194,29 +203,34 @@ simulation.sharp.null <- replicate(10000, est.cace(d_base))
 obs.cace <- coef(ATE_model_full)[2]
 
 plot(density(simulation.sharp.null), main = "")
-abline(v=obs.cace)
+abline(v=obs.cace, lty = 2)
 mean(abs(obs.cace) <= abs(simulation.sharp.null))
 ```
 
 
+#power analysis (not successful, not what we are looking for)
 
-<!-- #check to see within-block treatment effect -->
-<!-- ```{r} -->
-<!-- ATE_model_short_PT <- lm(Item_Price ~ serif + factor(item_number) + Income_Question + Age_Question + male, data = d[font_family == 'PT']) -->
+```{r}
+library(pwr)
+library(effsize)
+library(ggplot2)
+#effect size
+eff_size <- cohen.d(d[Serif == 0,Item_Price], d[Serif == 1,Item_Price], pooled = TRUE)$estimate
 
-<!-- stargazer(ATE_model_short_PT, type = "text", se=list(sqrt(diag(vcovHC(ATE_model_short_PT))))) -->
-<!-- ``` -->
 
+#power curve
+ptab <- NULL
 
-<!-- ```{r} -->
-<!-- ATE_model_short_Item1 <- lm(Item_Price ~ serif + factor(font_family) + Income_Question + Age_Question + male, data = d[item_number == '1']) -->
+for (i in seq(0.06,0.995, by = 0.005)){
+pwr_n <- pwr.t.test(sig.level = 0.05, power = i, type = "two.sample",
+                        d = eff_size, alternative="two.sided")
 
-<!-- stargazer(ATE_model_short_Item1, type = "text", se=list(sqrt(diag(vcovHC(ATE_model_short_Item1))))) -->
-<!-- ``` -->
+ptab <- rbind(ptab, pwr_n$n)
+}
 
-<!-- #power analysis -->
+i <- seq(0.06,0.995, by = 0.005)
 
-<!-- ```{r} -->
-<!-- library(pwr) -->
-<!-- pwr.t.test(d = ) -->
-<!-- ``` -->
+plot(ptab, i, type = "l", xlab = "Sample Size", ylab = "Power")
+abline(v = 1446, lty = 2)
+abline(h = 0.3925607, lty = 2)
+```
