@@ -208,7 +208,7 @@ mean(abs(obs.cace) <= abs(simulation.sharp.null))
 ```
 
 
-#power analysis (not successful, not what we are looking for)
+#power analysis
 
 ```{r}
 library(pwr)
